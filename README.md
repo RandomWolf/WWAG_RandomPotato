@@ -1,4 +1,4 @@
-# Rainbow Eyes for Wizard with a Gun
+# Random Wiz for Wizard with a Gun
 This is the third  modification to the game Wizard With a Gun (Demo)
 
 It generates a wizard with a fresh new outfit on every startup, and every click on them!
