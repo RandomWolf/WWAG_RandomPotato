@@ -17,7 +17,7 @@ It generates a wizard with a fresh new outfit on every startup, and every click 
 
 ### Installing the mod
 1. Download the latest release of the mod found [here](https://github.com/RandomWolf/WWAG_RandomPotato/releases/)
-2. Extract the Contents of the ZIP file into `Wizard with a Gun Demo\BepInEx\plugins\WWAG_RandomPotato.dll`
+2. Move the downloaded DLL into `Wizard with a Gun Demo\BepInEx\plugins\`
 
 The mod should now be installed.
 
