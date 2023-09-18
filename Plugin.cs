@@ -2,17 +2,22 @@
 using System;
 using Unity;
 using System.Collections;
-
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Wizgun;
 using System.Collections.Generic;
-
+using UI;
+using Skins;
+using Inventory;
+using Inventory.Unity;
 namespace WWAG_RandomPotato
 {
-	[BepInPlugin("org.NikoTheFox.RandomPotato", "WWAG Random Main Menu Wizard", "0.0.1")]
+	[BepInPlugin("org.NikoTheFox.RandomPotato", "WWAG Random Main Menu Wizard", "0.0.3")]
 	public class Plugin : BaseUnityPlugin
 	{
+
+
+
 		private void Awake()
 		{
 			Debug.Log($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
@@ -21,11 +26,44 @@ namespace WWAG_RandomPotato
 		{
 			if (scene.name == "title-screen")
 			{
-
+				// This adds my mod and a BoxCollider to the main menu wizard, so it can be clicked
 				Debug.Log($"Found scene, randomizing Wiz");
 				GameObject spine = GameObject.Find("background-canvas/player-animation");
 				spine.AddComponent<PluginRandomWiz>();
 				spine.AddComponent<BoxCollider>();
+
+			}
+			if (scene.name == "core-simple-all")
+			{
+
+				// This code adds the new randomize Button by copying the Confirm button
+				Debug.Log($"Found customizestuff");
+				GameObject obj = GameObject.Find("ui/cross-world-ui(Clone)/customize-wizard-ui/window/item-selection-panel/finalize-selectable-button");
+				if (obj == null)
+				{
+					Debug.Log("Couldnt find the object to copy");
+					return;
+				}
+				obj.transform.position = new Vector3(490, 150, 0);
+				obj.transform.localPosition = new Vector3(-500, -390, 0);
+				RectTransform rectTransform = obj.GetComponent<RectTransform>();
+				rectTransform.sizeDelta = new Vector2(200, rectTransform.sizeDelta.y);
+
+				GameObject copiedObj = Instantiate(obj);
+
+				copiedObj.transform.SetParent(obj.transform.parent, false);
+				copiedObj.name = "randomize";
+				copiedObj.transform.localPosition = new Vector3(-290, -390, 0);
+				RectTransform randTransform = copiedObj.GetComponent<RectTransform>();
+				randTransform.sizeDelta = new Vector2(220, rectTransform.sizeDelta.y);
+
+				GameObject randoText = copiedObj.transform.Find("Text").gameObject;
+				TMPro.TextMeshProUGUI textmesh = randoText.GetComponent<TMPro.TextMeshProUGUI>();
+				textmesh.text = "Randomize";
+				UI.SelectableButton button = copiedObj.GetComponent<UI.SelectableButton>();
+				WWAG_RandomPotato.PluginRandomCustomizeWiz plugin = copiedObj.AddComponent<WWAG_RandomPotato.PluginRandomCustomizeWiz>();
+				button.SetClickAction(new UnityEngine.Events.UnityAction(() => plugin.ChangeWizard()));
+
 
 			}
 		}
@@ -42,8 +80,13 @@ namespace WWAG_RandomPotato
 			ChangeWizard();
 		}
 
+	
+
 		void ChangeWizard()
         {
+
+			// This function gets a list of all "early-game" outfits from all SkinGroup objects that are loaded
+			// and then equips the Main Menu wizard with those objects
 			GameObject spine = GameObject.Find("background-canvas/player-animation");
 			Skins.PlayerSkins skin = spine.GetComponent<Skins.PlayerSkins>();
 			Skins.SkinGroup[] allSkinGroups = Resources.FindObjectsOfTypeAll<Skins.SkinGroup>();
@@ -174,5 +217,86 @@ namespace WWAG_RandomPotato
 			ChangeWizard();
 		}
 
+	}
+
+	public class PluginRandomCustomizeWiz : MonoBehaviour
+	{
+		private PlayerSpawnGameData _spawnGameData;
+		private Dictionary<ItemType, ItemAssetHandle> _currentEquipmentItems = new Dictionary<ItemType, ItemAssetHandle>();
+		private SkinGroup _currentEyeShape;
+		private Color _currentEyeColor;
+		public PlayerSkins wizardPreview;
+
+		void Awake()
+        {
+
+			// I have to redo the text here, for some reason otherwise it doesnt stick?
+			GameObject randoText = this.transform.Find("Text").gameObject;
+			if (randoText == null)
+			{
+				Debug.Log("Couldnt find the text object.");
+				return;
+			}
+			TMPro.TextMeshProUGUI textmesh = randoText.GetComponent<TMPro.TextMeshProUGUI>();
+			textmesh.text = "Randomize";
+		}
+
+		public void ChangeWizard()
+        {
+
+			// MOST OF THIS FUNCTION IS BY GALVANIC, I will rewrite it with my own code if they tell me to
+			// pls dont sue me
+
+			Debug.Log($"Randomizing Wiz");
+			GameObject customWizard = GameObject.Find("ui/cross-world-ui(Clone)/customize-wizard-ui/window/item-selection-panel/player-animation");
+			GameObject mainUI = GameObject.Find("ui/cross-world-ui(Clone)/customize-wizard-ui");
+			UI.CustomizeWizardUI wizardUI = mainUI.GetComponent<UI.CustomizeWizardUI>();
+
+			
+			wizardPreview = customWizard.GetComponent<PlayerSkins>();
+			this._spawnGameData = GameDataCache.GetGameData<PlayerSpawnGameData>();
+
+			Unity.Mathematics.Random random = new Unity.Mathematics.Random();
+
+			// This was modified from the Galvanic Version from Seconds to Milliseconds
+			random.InitState((uint)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+			if (this._spawnGameData.eyeShapeOptions.Length != 0)
+			{
+				SkinGroup eyeShapeOption = this._spawnGameData.eyeShapeOptions[random.NextInt(0, this._spawnGameData.eyeShapeOptions.Length)];
+				this.wizardPreview.SetEquipSlot(eyeShapeOption, EquipSlot.Eyes);
+				this._currentEyeShape = eyeShapeOption;
+			}
+			if (this._spawnGameData.eyeColorOptions.Length != 0)
+			{
+				Color eyeColorOption = this._spawnGameData.eyeColorOptions[random.NextInt(0, this._spawnGameData.eyeColorOptions.Length)];
+				this.wizardPreview.SetSlotColor(ColorSlot.Eyes, eyeColorOption);
+				this.wizardPreview.SetAllColors();
+				this._currentEyeColor = eyeColorOption;
+			}
+
+			foreach (PlayerSpawnGameData.EquipmentOptions equipmentOption in this._spawnGameData.equipmentOptions)
+			{
+				if (equipmentOption.options.Length != 0)
+				{
+					int index = random.NextInt(0, equipmentOption.options.Length);
+					GameObject option = equipmentOption.options[index];
+					StaticItemEquipmentComponent component = option.GetComponent<StaticItemEquipmentComponent>();
+					EquipSlot slot;
+					if (SkinsUtil.TryGetEquipSlot(equipmentOption.itemType, out slot))
+					{
+						this.wizardPreview.SetEquipSlot(component.skinGroup, slot);
+						this._currentEquipmentItems[equipmentOption.itemType] = new ItemAssetHandle(option);
+					}
+				}
+			}
+
+			// This snippet here is not part of the Galvanic Code
+			System.Reflection.FieldInfo eyeShapeField = typeof(CustomizeWizardUI).GetField("_currentEyeShape", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+			eyeShapeField.SetValue(wizardUI, _currentEyeShape);
+
+			System.Reflection.FieldInfo equipment = typeof(CustomizeWizardUI).GetField("_currentEquipmentItems", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+			equipment.SetValue(wizardUI, _currentEquipmentItems);
+
+		}
 	}
 }

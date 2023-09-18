@@ -25,6 +25,18 @@
   </ItemGroup>
   
   <ItemGroup>
+    <Reference Include="GGUtil">
+      <HintPath>lib\GGUtil.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Mathematics">
+      <HintPath>lib\Unity.Mathematics.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>lib\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>lib\UnityEngine.UI.dll</HintPath>
+    </Reference>
     <Reference Include="WizGun">
       <HintPath>lib\WizGun.dll</HintPath>
     </Reference>
