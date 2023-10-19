@@ -12,7 +12,7 @@ using Inventory;
 using Inventory.Unity;
 namespace WWAG_RandomPotato
 {
-	[BepInPlugin("org.NikoTheFox.RandomPotato", "WWAG Random Main Menu Wizard", "0.0.3")]
+	[BepInPlugin("org.NikoTheFox.RandomPotato", "WWAG Random Main Menu Wizard", "1.0.0")]
 	public class Plugin : BaseUnityPlugin
 	{
 
@@ -45,7 +45,7 @@ namespace WWAG_RandomPotato
 					return;
 				}
 				obj.transform.position = new Vector3(490, 150, 0);
-				obj.transform.localPosition = new Vector3(-500, -390, 0);
+				obj.transform.localPosition = new Vector3(-500, -410, 0);
 				RectTransform rectTransform = obj.GetComponent<RectTransform>();
 				rectTransform.sizeDelta = new Vector2(200, rectTransform.sizeDelta.y);
 
@@ -53,7 +53,7 @@ namespace WWAG_RandomPotato
 
 				copiedObj.transform.SetParent(obj.transform.parent, false);
 				copiedObj.name = "randomize";
-				copiedObj.transform.localPosition = new Vector3(-290, -390, 0);
+				copiedObj.transform.localPosition = new Vector3(-290, -410, 0);
 				RectTransform randTransform = copiedObj.GetComponent<RectTransform>();
 				randTransform.sizeDelta = new Vector2(220, rectTransform.sizeDelta.y);
 
@@ -87,7 +87,7 @@ namespace WWAG_RandomPotato
 
 			// This function gets a list of all "early-game" outfits from all SkinGroup objects that are loaded
 			// and then equips the Main Menu wizard with those objects
-			GameObject spine = GameObject.Find("background-canvas/player-animation");
+			GameObject spine = gameObject;
 			Skins.PlayerSkins skin = spine.GetComponent<Skins.PlayerSkins>();
 			Skins.SkinGroup[] allSkinGroups = Resources.FindObjectsOfTypeAll<Skins.SkinGroup>();
 
@@ -260,11 +260,11 @@ namespace WWAG_RandomPotato
 
 			// This was modified from the Galvanic Version from Seconds to Milliseconds
 			random.InitState((uint)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-			if (this._spawnGameData.eyeShapeOptions.Length != 0)
+			if (this._spawnGameData.eyeShapeItems.Length != 0)
 			{
-				SkinGroup eyeShapeOption = this._spawnGameData.eyeShapeOptions[random.NextInt(0, this._spawnGameData.eyeShapeOptions.Length)];
-				this.wizardPreview.SetEquipSlot(eyeShapeOption, EquipSlot.Eyes);
-				this._currentEyeShape = eyeShapeOption;
+				StaticItemEquipmentComponent component = this._spawnGameData.eyeShapeItems[random.NextInt(0, this._spawnGameData.eyeShapeItems.Length)].GetComponent<StaticItemEquipmentComponent>();
+				this.wizardPreview.SetEquipSlot(component.skinGroup, EquipSlot.Eyes);
+				this._currentEyeShape = component.skinGroup;
 			}
 			if (this._spawnGameData.eyeColorOptions.Length != 0)
 			{
@@ -273,19 +273,20 @@ namespace WWAG_RandomPotato
 				this.wizardPreview.SetAllColors();
 				this._currentEyeColor = eyeColorOption;
 			}
-
-			foreach (PlayerSpawnGameData.EquipmentOptions equipmentOption in this._spawnGameData.equipmentOptions)
+			Dictionary<ItemType, List<GameObject>> equipmentOptions = this._spawnGameData.GetAllEquipmentOptions();
+			foreach (ItemType key in equipmentOptions.Keys)
 			{
-				if (equipmentOption.options.Length != 0)
+				if ((key & ItemType.Clothing) != ItemType.None)
 				{
-					int index = random.NextInt(0, equipmentOption.options.Length);
-					GameObject option = equipmentOption.options[index];
-					StaticItemEquipmentComponent component = option.GetComponent<StaticItemEquipmentComponent>();
+					int count = equipmentOptions[key].Count;
+					int index = random.NextInt(0, count);
+					GameObject gameObject = equipmentOptions[key][index];
+					StaticItemEquipmentComponent component = gameObject.GetComponent<StaticItemEquipmentComponent>();
 					EquipSlot slot;
-					if (SkinsUtil.TryGetEquipSlot(equipmentOption.itemType, out slot))
+					if (SkinsUtil.TryGetEquipSlot(key, out slot))
 					{
 						this.wizardPreview.SetEquipSlot(component.skinGroup, slot);
-						this._currentEquipmentItems[equipmentOption.itemType] = new ItemAssetHandle(option);
+						this._currentEquipmentItems[key] = new ItemAssetHandle(gameObject);
 					}
 				}
 			}
